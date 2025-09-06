@@ -62,7 +62,13 @@ export async function renderHomePage (proxySettings, isPassSet) {
     });
 
     let udpNoiseBlocks = '';
-    JSON.parse(xrayUdpNoises).forEach( (noise, index) => {
+    let parsedNoises = [];
+    try {
+        parsedNoises = JSON.parse(xrayUdpNoises);
+    } catch (error) {
+        parsedNoises = [];
+    }
+    parsedNoises.forEach( (noise, index) => {
         udpNoiseBlocks += `
             <div id="udp-noise-container-${index}" class="udp-noise">
                 <div class="header-container">
@@ -547,7 +553,7 @@ export async function renderHomePage (proxySettings, isPassSet) {
                 if (!response.ok) {
                     const errorMessage = await response.text();
                     console.error(errorMessage, response.status);
-                    alert('⚠️ An error occured, Please try again!\\n⛔ ' + errorMessage);
+                    alert('⚠️ An error occurred, Please try again!\\n⛔ ' + errorMessage);
                     return;
                 }       
                 alert('✅ Panel settings reset to default successfully! 😎');
@@ -679,7 +685,7 @@ export async function renderHomePage (proxySettings, isPassSet) {
             if (!response.ok) {
                 const errorMessage = await response.text();
                 console.error(errorMessage, response.status);
-                alert('⚠️ An error occured, Please try again!\\n⛔ ' + errorMessage);
+                alert('⚠️ An error occurred, Please try again!\\n⛔ ' + errorMessage);
                 return;
             }          
             alert('✅ Warp configs updated successfully! 😎');
@@ -857,11 +863,11 @@ export async function renderHomePage (proxySettings, isPassSet) {
             return false;
         }
         
-        let submisionError = false;
+        let submissionError = false;
         for (const [index, mode] of udpNoiseModes.entries()) {
             if (udpNoiseDelaysMin[index] > udpNoiseDelaysMax[index]) {
                 alert('⛔ The minimum noise delay should be smaller or equal to maximum! 🫤');
-                submisionError = true;
+                submissionError = true;
                 break;
             }
             
@@ -869,31 +875,31 @@ export async function renderHomePage (proxySettings, isPassSet) {
                 case 'base64':
                     if (!base64Regex.test(udpNoisePackets[index])) {
                         alert('⛔ The Base64 noise packet is not a valid base64 value! 🫤');
-                        submisionError = true;
+                        submissionError = true;
                     }
                     break;
 
                 case 'rand':
                     if (!(/^\\d+-\\d+$/.test(udpNoisePackets[index]))) {
                         alert('⛔ The Random noise packet should be a range like 0-10 or 10-30! 🫤');
-                        submisionError = true;
+                        submissionError = true;
                     }
                     const [min, max] = udpNoisePackets[index].split("-").map(Number);
                     if (min > max) {
                         alert('⛔ The minimum Random noise packet should be smaller or equal to maximum! 🫤');
-                        submisionError = true;
+                        submissionError = true;
                     }
                     break;
 
                 case 'hex':
                     if (!(/^(?=(?:[0-9A-Fa-f]{2})*$)[0-9A-Fa-f]+$/.test(udpNoisePackets[index]))) {
                         alert('⛔ The Hex noise packet is not a valid hex value! It should have even length and consisted of 0-9, a-f and A-F. 🫤');
-                        submisionError = true;
+                        submissionError = true;
                     }
                     break;
             }
         }
-        if (submisionError) return false;
+        if (submissionError) return false;
 
         try {
             document.body.style.cursor = 'wait';
