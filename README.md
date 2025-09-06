@@ -42,6 +42,14 @@ This project is dedicated to developing a user panel for the [Cloudflare-workers
 - [FAQ](docs/faq.md)
 <br>
 
+## Documentation
+
+Additional references in `docs/`:
+- API reference: `docs/api.md`
+- HTTP endpoints: `docs/endpoints.md`
+- UI pages/components: `docs/pages.md`
+- Usage examples: `docs/examples.md`
+
 ## Supported Clients
 | Client  | Version | Fragment | Warp Pro |
 | :-------------: | :-------------: | :-------------: | :-------------: |
