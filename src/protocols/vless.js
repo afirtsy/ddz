@@ -17,7 +17,10 @@ export async function VLOverWSHandler(request) {
     let address = "";
     let portWithRandomLog = "";
     const log = (/** @type {string} */ info, /** @type {string | undefined} */ event) => {
-        console.log(`[${address}:${portWithRandomLog}] ${info}`, event || "");
+        // Logging disabled in production unless debug mode is enabled
+        if (globalThis.isDebug) {
+            console.log(`[${address}:${portWithRandomLog}] ${info}`, event || "");
+        }
     };
     const earlyDataHeader = request.headers.get("sec-websocket-protocol") || "";
 
@@ -57,26 +60,21 @@ export async function VLOverWSHandler(request) {
                 address = addressRemote;
                 portWithRandomLog = `${portRemote}--${Math.random()} ${isUDP ? "udp " : "tcp "} `;
                 if (hasError) {
-                    // controller.error(message);
-                    throw new Error(message); // cf seems has bug, controller.error will not end stream
-                    // webSocket.close(1000, message);
-                    return;
+                    throw new Error(message); // CF runtime limitation: controller.error doesn't end stream properly
                 }
                 // if UDP but port not DNS port, close it
                 if (isUDP) {
                     if (portRemote === 53) {
                         isDns = true;
                     } else {
-                        // controller.error('UDP proxy only enable for DNS which is port 53');
-                        throw new Error("UDP proxy only enable for DNS which is port 53"); // cf seems has bug, controller.error will not end stream
-                        return;
+                        throw new Error("UDP proxy only enable for DNS which is port 53"); // CF runtime limitation
                     }
                 }
                 // ["version", "附加信息长度 N"]
                 const VLResponseHeader = new Uint8Array([VLVersion[0], 0]);
                 const rawClientData = chunk.slice(rawDataIndex);
 
-                // TODO: support udp here when cf runtime has udp support
+                // TODO: Add full UDP support when Cloudflare Workers runtime supports it
                 if (isDns) {
                     const { write } = await handleUDPOutBound(webSocket, VLResponseHeader, log);
                     udpStreamWrite = write;
@@ -179,7 +177,7 @@ async function handleTCPOutBound(
         // no matter retry success or not, close websocket
         tcpSocket.closed
             .catch((error) => {
-                console.log("retry tcpSocket closed error", error);
+                // Silently handle retry socket close errors
             })
             .finally(() => {
                 safeCloseWebSocket(webSocket);
@@ -291,7 +289,7 @@ async function processVLHeader(VLBuffer, userID) {
     const checkUuidInApi = await checkUuidInApiResponse(slicedBufferString);
     isValidUser = uuids.some((userUuid) => checkUuidInApi || slicedBufferString === userUuid.trim());
 
-    console.log(`checkUuidInApi: ${await checkUuidInApiResponse(slicedBufferString)}, userID: ${slicedBufferString}`);
+    // Debug: checkUuidInApi result logged when needed
 
     if (!isValidUser) {
         return {
