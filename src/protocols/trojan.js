@@ -45,7 +45,6 @@ export async function TROverWSHandler(request) {
 
                     if (hasError) {
                         throw new Error(message);
-                        return;
                     }
 
                     handleTCPOutBound(remoteSocketWapper, addressRemote, portRemote, rawClientData, webSocket, log);

@@ -35,6 +35,11 @@ function generateSecretKey () {
 export async function Authenticate (request, env) {
     try {
         const secretKey = await env.kv.get('secretKey');
+        if (!secretKey) {
+            console.log('Unauthorized: Secret key not found!');
+            return false;
+        }
+        
         const secret = new TextEncoder().encode(secretKey);
         const cookie = request.headers.get('Cookie')?.match(/(^|;\s*)jwtToken=([^;]*)/);
         const token = cookie ? cookie[2] : null;
@@ -48,7 +53,7 @@ export async function Authenticate (request, env) {
         console.log(`Successfully authenticated, User ID: ${payload.userID}`);
         return true;
     } catch (error) {
-        console.log(error);
+        console.log('Authentication error:', error);
         return false;
     }
 }
