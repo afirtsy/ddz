@@ -1,42 +1,57 @@
 import nacl from 'tweetnacl';
 
 export async function fetchWarpConfigs (env) {
-    let warpConfigs = [];
-    const apiBaseUrl = 'https://api.cloudflareclient.com/v0a4005/reg';
-    const warpKeys = [ generateKeyPair(), generateKeyPair() ];
-    const commonPayload = {
-        install_id: "",
-        fcm_token: "",
-        tos: new Date().toISOString(),
-        type: "Android",
-        model: 'PC',
-        locale: 'en_US',
-        warp_enabled: true
-    };
+    try {
+        let warpConfigs = [];
+        const apiBaseUrl = 'https://api.cloudflareclient.com/v0a4005/reg';
+        const warpKeys = [ generateKeyPair(), generateKeyPair() ];
+        const commonPayload = {
+            install_id: "",
+            fcm_token: "",
+            tos: new Date().toISOString(),
+            type: "Android",
+            model: 'PC',
+            locale: 'en_US',
+            warp_enabled: true
+        };
 
-    const fetchAccount = async (key) => {
-        const response = await fetch(apiBaseUrl, {
-            method: 'POST',
-            headers: {
-                'User-Agent': 'insomnia/8.6.1',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ ...commonPayload, key: key.publicKey })
-        });
-        return await response.json();
-    };
+        const fetchAccount = async (key) => {
+            try {
+                const response = await fetch(apiBaseUrl, {
+                    method: 'POST',
+                    headers: {
+                        'User-Agent': 'insomnia/8.6.1',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ...commonPayload, key: key.publicKey })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching account:', error);
+                throw error;
+            }
+        };
 
-    for (const key of warpKeys) {
-        const accountData = await fetchAccount(key);
-        warpConfigs.push({
-            privateKey: key.privateKey,
-            account: accountData
-        });
+        for (const key of warpKeys) {
+            const accountData = await fetchAccount(key);
+            warpConfigs.push({
+                privateKey: key.privateKey,
+                account: accountData
+            });
+        }
+        
+        const configs = JSON.stringify(warpConfigs);
+        await env.kv.put('warpConfigs', configs);
+        return { error: null, configs };
+    } catch (error) {
+        console.error('Error in fetchWarpConfigs:', error);
+        return { error: error.message, configs: null };
     }
-    
-    const configs = JSON.stringify(warpConfigs)
-    await env.kv.put('warpConfigs', configs);
-    return { error: null, configs };
 }
 
 const generateKeyPair = () => {
