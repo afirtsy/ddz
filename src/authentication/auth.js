@@ -40,15 +40,15 @@ export async function Authenticate (request, env) {
         const token = cookie ? cookie[2] : null;
 
         if (!token) {
-            console.log('Unauthorized: Token not available!');
+            // Unauthorized: Token not available
             return false;
         }
 
         const { payload } = await jwtVerify(token, secret);
-        console.log(`Successfully authenticated, User ID: ${payload.userID}`);
+        // Successfully authenticated
         return true;
     } catch (error) {
-        console.log(error);
+        // Authentication error
         return false;
     }
 }

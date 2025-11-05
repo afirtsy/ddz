@@ -8,7 +8,10 @@ export async function TROverWSHandler(request) {
     let address = "";
     let portWithRandomLog = "";
     const log = (info, event) => {
-        console.log(`[${address}:${portWithRandomLog}] ${info}`, event || "");
+        // Logging disabled in production unless debug mode is enabled
+        if (globalThis.isDebug) {
+            console.log(`[${address}:${portWithRandomLog}] ${info}`, event || "");
+        }
     };
     const earlyDataHeader = request.headers.get("sec-websocket-protocol") || "";
     const readableWebSocketStream = makeReadableWebSocketStream(webSocket, earlyDataHeader, log);
@@ -45,7 +48,6 @@ export async function TROverWSHandler(request) {
 
                     if (hasError) {
                         throw new Error(message);
-                        return;
                     }
 
                     handleTCPOutBound(remoteSocketWapper, addressRemote, portRemote, rawClientData, webSocket, log);
@@ -204,7 +206,7 @@ async function handleTCPOutBound(
         // no matter retry success or not, close websocket
         tcpSocket.closed
             .catch((error) => {
-                console.log("retry tcpSocket closed error", error);
+                // Silently handle retry socket close errors
             })
             .finally(() => {
                 safeCloseWebSocket(webSocket);
