@@ -13,8 +13,20 @@ export async function getConfigAddresses(cleanIPs, enableIPv6) {
 }
 
 export function extractWireguardParams(warpConfigs, isWoW) {
+    if (!warpConfigs || warpConfigs.length === 0) {
+        throw new Error('Warp configs not available');
+    }
+    
     const index = isWoW ? 1 : 0;
+    if (!warpConfigs[index] || !warpConfigs[index].account || !warpConfigs[index].account.config) {
+        throw new Error(`Warp config at index ${index} is not properly configured`);
+    }
+    
     const warpConfig = warpConfigs[index].account.config;
+    if (!warpConfig.interface || !warpConfig.interface.addresses || !warpConfig.peers || !warpConfig.peers[0]) {
+        throw new Error('Invalid warp config structure');
+    }
+    
     return {
         warpIPv6: `${warpConfig.interface.addresses.v6}/128`,
         reserved: warpConfig.client_id,
@@ -53,10 +65,22 @@ export function getRandomPath (length) {
 }
 
 export function base64ToDecimal (base64) {
-    const binaryString = atob(base64);
-    const hexString = Array.from(binaryString).map(char => char.charCodeAt(0).toString(16).padStart(2, '0')).join('');
-    const decimalArray = hexString.match(/.{2}/g).map(hex => parseInt(hex, 16));
-    return decimalArray;
+    if (!base64 || typeof base64 !== 'string') {
+        throw new Error('Invalid base64 input');
+    }
+    
+    try {
+        const binaryString = atob(base64);
+        const hexString = Array.from(binaryString).map(char => char.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+        const hexMatches = hexString.match(/.{2}/g);
+        if (!hexMatches) {
+            throw new Error('Failed to parse hex string');
+        }
+        const decimalArray = hexMatches.map(hex => parseInt(hex, 16));
+        return decimalArray;
+    } catch (error) {
+        throw new Error(`Failed to decode base64: ${error.message}`);
+    }
 }
 
 export function isIPv4(address) {
