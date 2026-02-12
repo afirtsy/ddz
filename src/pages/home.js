@@ -585,7 +585,7 @@ export async function renderHomePage (proxySettings, isPassSet) {
         try {
             const response = await fetch(url);
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
             }
             const data = await response.json();
             const blob = new Blob([JSON.stringify(data, null, 4)], { type: 'application/json' });
@@ -595,8 +595,11 @@ export async function renderHomePage (proxySettings, isPassSet) {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            // Clean up the URL object to prevent memory leaks
+            URL.revokeObjectURL(link.href);
         } catch (error) {
             console.error('There was a problem with the fetch operation:', error);
+            alert('Failed to download configuration. Please try again.');
         }
     };
 
@@ -768,7 +771,10 @@ export async function renderHomePage (proxySettings, isPassSet) {
         event.preventDefault();
         event.stopPropagation();
         const applyButton = document.getElementById('applyButton');
-        const getValue = (id) => parseInt(document.getElementById(id).value, 10);              
+        const getValue = (id) => {
+            const value = parseInt(document.getElementById(id).value, 10);
+            return isNaN(value) ? 0 : value;
+        };              
         const lengthMin = getValue('fragmentLengthMin');
         const lengthMax = getValue('fragmentLengthMax');
         const intervalMin = getValue('fragmentIntervalMin');

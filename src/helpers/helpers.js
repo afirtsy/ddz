@@ -75,6 +75,9 @@ export async function getMyIP(request) {
     const ip = await request.text();
     try {
         const response = await fetch(`http://ip-api.com/json/${ip}?nocache=${Date.now()}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const geoLocation = await response.json();
         return new Response(JSON.stringify(geoLocation), {
             status: 200,
@@ -84,6 +87,12 @@ export async function getMyIP(request) {
         });
     } catch (error) {
         console.error('Error fetching IP address:', error);
+        return new Response(JSON.stringify({ error: 'Failed to get IP information' }), {
+            status: 500,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
     }
 }
 

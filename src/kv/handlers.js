@@ -116,9 +116,16 @@ export async function updateDataset (request, env) {
 
     try {    
         await env.kv.put("proxySettings", JSON.stringify(proxySettings));
-        if (isReset) await updateWarpConfigs(request, env);          
+        if (isReset) {
+            try {
+                await updateWarpConfigs(request, env);
+            } catch (warpError) {
+                console.log('Warning: Failed to update Warp configs during reset:', warpError);
+                // Continue execution, don't fail the entire operation
+            }
+        }          
     } catch (error) {
-        console.log(error);
+        console.log('KV update error:', error);
         throw new Error(`An error occurred while updating KV - ${error}`);
     }
 
@@ -128,31 +135,37 @@ export async function updateDataset (request, env) {
 function extractChainProxyParams(chainProxy) {
     let configParams = {};
     if (!chainProxy) return {};
-    const url = new URL(chainProxy);
-    const protocol = url.protocol.slice(0, -1);
-    if (protocol === atob('dmxlc3M=')) {
-        const params = new URLSearchParams(url.search);
-        configParams = {
-            protocol: protocol,
-            uuid : url.username,
-            server : url.hostname,
-            port : url.port
-        };
     
-        params.forEach( (value, key) => {
-            configParams[key] = value;
-        });
-    } else {
-        configParams = {
-            protocol: protocol, 
-            user : url.username,
-            pass : url.password,
-            server : url.host,
-            port : url.port
-        };
-    }
+    try {
+        const url = new URL(chainProxy);
+        const protocol = url.protocol.slice(0, -1);
+        if (protocol === atob('dmxlc3M=')) {
+            const params = new URLSearchParams(url.search);
+            configParams = {
+                protocol: protocol,
+                uuid : url.username || '',
+                server : url.hostname || '',
+                port : url.port || '443'
+            };
+        
+            params.forEach( (value, key) => {
+                configParams[key] = value;
+            });
+        } else {
+            configParams = {
+                protocol: protocol, 
+                user : url.username || '',
+                pass : url.password || '',
+                server : url.host || '',
+                port : url.port || '80'
+            };
+        }
 
-    return JSON.stringify(configParams);
+        return JSON.stringify(configParams);
+    } catch (error) {
+        console.error('Error parsing chain proxy URL:', error);
+        return JSON.stringify({});
+    }
 }
 
 export async function updateWarpConfigs(request, env) {
