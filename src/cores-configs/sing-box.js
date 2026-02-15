@@ -451,7 +451,9 @@ function buildSingBoxTROutbound (proxySettings, remark, address, port, host, sni
 function buildSingBoxWarpOutbound (proxySettings, warpConfigs, remark, endpoint, chain) {
     const ipv6Regex = /\[(.*?)\]/;
     const portRegex = /[^:]*$/;
-    const endpointServer = endpoint.includes('[') ? endpoint.match(ipv6Regex)[1] : endpoint.split(':')[0];
+    const endpointServer = endpoint.includes('[') ? 
+        (endpoint.match(ipv6Regex) ? endpoint.match(ipv6Regex)[1] : '') : 
+        (endpoint.split(':').length > 0 ? endpoint.split(':')[0] : '');
     const endpointPort = endpoint.includes('[') ? +endpoint.match(portRegex)[0] : +endpoint.split(':')[1];
     const server = chain ? "162.159.192.1" : endpointServer;
     const port = chain ? 2408 : endpointPort;
@@ -563,7 +565,8 @@ function buildSingBoxChainOutbound (chainProxyParams, enableIPv6) {
     }
 
     if (type === 'ws') {
-        const wsPath = path?.split('?ed=')[0];
+        const pathParts = path?.split('?ed=');
+        const wsPath = pathParts && pathParts.length > 0 ? pathParts[0] : '';
         const earlyData = +path?.split('?ed=')[1] || 0;
         chainOutbound.transport = {
             type: "ws",
@@ -647,11 +650,16 @@ export async function getSingBoxCustomConfig(request, env) {
     } = proxySettings;
  
     if (outProxy) {
-        const proxyParams = JSON.parse(outProxyParams);      
+        let proxyParams = {};
+        try {
+            proxyParams = JSON.parse(outProxyParams);
+        } catch (error) {
+            proxyParams = {};
+        }      
         try {
             chainProxy = buildSingBoxChainOutbound(proxyParams, enableIPv6);
         } catch (error) {
-            console.log('An error occured while parsing chain proxy: ', error);
+            // Error occurred while parsing chain proxy - using default
             chainProxy = undefined;
             await env.kv.put("proxySettings", JSON.stringify({
                 ...proxySettings, 

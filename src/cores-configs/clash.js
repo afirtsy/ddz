@@ -311,7 +311,9 @@ function buildClashWarpOutbound (proxySettings, warpConfigs, remark, endpoint, c
     const { amneziaNoiseCount, amneziaNoiseSizeMin, amneziaNoiseSizeMax } = proxySettings;
     const ipv6Regex = /\[(.*?)\]/;
     const portRegex = /[^:]*$/;
-    const endpointServer = endpoint.includes('[') ? endpoint.match(ipv6Regex)[1] : endpoint.split(':')[0];
+    const endpointServer = endpoint.includes('[') ? 
+        (endpoint.match(ipv6Regex) ? endpoint.match(ipv6Regex)[1] : '') : 
+        (endpoint.split(':').length > 0 ? endpoint.split(':')[0] : '');
     const endpointPort = endpoint.includes('[') ? +endpoint.match(portRegex)[0] : +endpoint.split(':')[1];
     const {
         warpIPv6,
@@ -405,7 +407,8 @@ function buildClashChainOutbound(chainProxyParams) {
     }
 
     if (type === 'ws') {
-        const wsPath = path?.split('?ed=')[0];
+        const pathParts = path?.split('?ed=');
+        const wsPath = pathParts && pathParts.length > 0 ? pathParts[0] : '';
         const earlyData = +path?.split('?ed=')[1];
         chainOutbound["ws-opts"] = {
             "path": wsPath,
@@ -489,7 +492,7 @@ export async function getClashNormalConfig (request, env) {
         try {
             chainProxy = buildClashChainOutbound(proxyParams);
         } catch (error) {
-            console.log('An error occured while parsing chain proxy: ', error);
+            // Error occurred while parsing chain proxy - using default
             chainProxy = undefined;
             await env.kv.put("proxySettings", JSON.stringify({
                 ...proxySettings, 
