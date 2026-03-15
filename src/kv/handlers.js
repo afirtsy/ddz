@@ -8,8 +8,7 @@ export async function getDataset(request, env) {
         proxySettings = await env.kv.get("proxySettings", {type: 'json'});
         warpConfigs = await env.kv.get('warpConfigs', {type: 'json'});
     } catch (error) {
-        console.log(error);
-        throw new Error(`An error occurred while getting KV - ${error}`);
+        throw new Error(`An error occurred while getting KV - ${error.message || error}`);
     }
 
     if (!proxySettings) {
@@ -32,8 +31,7 @@ export async function updateDataset (request, env) {
         try {
             currentSettings = await env.kv.get("proxySettings", {type: 'json'});
         } catch (error) {
-            console.log(error);
-            throw new Error(`An error occurred while getting current KV settings - ${error}`);
+            throw new Error(`An error occurred while getting current KV settings - ${error.message || error}`);
         }
         const udpNoiseModes = newSettings?.getAll('udpXrayNoiseMode') || [];
         const udpNoisePackets = newSettings?.getAll('udpXrayNoisePacket') || [];
@@ -118,8 +116,7 @@ export async function updateDataset (request, env) {
         await env.kv.put("proxySettings", JSON.stringify(proxySettings));
         if (isReset) await updateWarpConfigs(request, env);          
     } catch (error) {
-        console.log(error);
-        throw new Error(`An error occurred while updating KV - ${error}`);
+        throw new Error(`An error occurred while updating KV - ${error.message || error}`);
     }
 
     return proxySettings;
@@ -164,8 +161,7 @@ export async function updateWarpConfigs(request, env) {
             if (warpPlusError) return new Response(warpPlusError, { status: 400 });
             return new Response('Warp configs updated successfully', { status: 200 });
         } catch (error) {
-            console.log(error);
-            return new Response(`An error occurred while updating Warp configs! - ${error}`, { status: 500 });
+            return new Response(`An error occurred while updating Warp configs! - ${error.message || error}`, { status: 500 });
         }
     } else {
         return new Response('Unsupported request', { status: 405 });

@@ -602,7 +602,13 @@ function buildFreedomOutbound (proxySettings, isFragment, isUdpNoises, tag) {
 
     if (isUdpNoises) {
         outbound.settings.noises = [];
-        JSON.parse(xrayUdpNoises).forEach(noise => {
+        let parsedNoises = [];
+        try {
+            parsedNoises = JSON.parse(xrayUdpNoises);
+        } catch (error) {
+            parsedNoises = [];
+        }
+        parsedNoises.forEach(noise => {
             const count = +noise.count;
             delete noise.count;
             outbound.settings.noises.push( ...Array.from({ length: count }, () => noise));
@@ -718,11 +724,16 @@ export async function getXrayCustomConfigs(request, env, isFragment) {
     } = proxySettings;
 
     if (outProxy) {
-        const proxyParams = JSON.parse(outProxyParams);
+        let proxyParams = {};
+        try {
+            proxyParams = JSON.parse(outProxyParams);
+        } catch (error) {
+            proxyParams = {};
+        }
         try {
             chainProxy = buildXrayChainOutbound(proxyParams, enableIPv6);
         } catch (error) {
-            console.log('An error occured while parsing chain proxy: ', error);
+            // Error occurred while parsing chain proxy - using default
             chainProxy = undefined;
             await env.kv.put("proxySettings", JSON.stringify({
                 ...proxySettings, 
@@ -802,13 +813,17 @@ export async function getXrayWarpConfigs (request, env, client) {
     const xrayWoWConfigs = [];
     const xrayWarpOutbounds = [];
     const xrayWoWOutbounds = [];
-    const outboundDomains = warpEndpoints.split(',').map(endpoint => endpoint.split(':')[0]).filter(address => isDomain(address));
+    const outboundDomains = warpEndpoints.split(',').map(endpoint => {
+        const parts = endpoint.split(':');
+        return parts.length > 0 ? parts[0] : '';
+    }).filter(address => address && isDomain(address));
     const proIndicator = client !== 'xray' ? ' Pro ' : ' ';
     const xrayWarpChain = client === 'xray-pro' ? 'udp-noise' : undefined;
     let freedomOutbound; 
     
     for (const [index, endpoint] of warpEndpoints.split(',').entries()) {
-        const endpointHost = endpoint.split(':')[0];
+        const parts = endpoint.split(':');
+        const endpointHost = parts.length > 0 ? parts[0] : '';
         const warpConfig = buildXrayConfig(proxySettings, `💦 ${index + 1} - Warp${proIndicator}🇮🇷`, false, false, false, true);
         const WoWConfig = buildXrayConfig(proxySettings, `💦 ${index + 1} - WoW${proIndicator}🌍`, false, true, false, true);
         if (client === 'xray-pro') {
