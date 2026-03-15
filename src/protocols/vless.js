@@ -60,7 +60,6 @@ export async function VLOverWSHandler(request) {
                     // controller.error(message);
                     throw new Error(message); // cf seems has bug, controller.error will not end stream
                     // webSocket.close(1000, message);
-                    return;
                 }
                 // if UDP but port not DNS port, close it
                 if (isUDP) {
@@ -69,7 +68,6 @@ export async function VLOverWSHandler(request) {
                     } else {
                         // controller.error('UDP proxy only enable for DNS which is port 53');
                         throw new Error("UDP proxy only enable for DNS which is port 53"); // cf seems has bug, controller.error will not end stream
-                        return;
                     }
                 }
                 // ["version", "附加信息长度 N"]
@@ -114,6 +112,16 @@ export async function VLOverWSHandler(request) {
 }
 
 /**
+ * Gets API response from external service
+ * @returns {Promise<any>} The API response
+ */
+async function getApiResponse() {
+    // Placeholder implementation - should be configured based on actual API endpoint
+    // For now, return null to avoid breaking the application
+    return null;
+}
+
+/**
  * Checks if a given UUID is present in the API response.
  * @param {string} targetUuid The UUID to search for.
  * @returns {Promise<boolean>} A Promise that resolves to true if the UUID is present in the API response, false otherwise.
@@ -126,7 +134,7 @@ async function checkUuidInApiResponse(targetUuid) {
         if (!apiResponse) {
             return false;
         }
-        const isUuidInResponse = apiResponse.users.some((user) => user.uuid === targetUuid);
+        const isUuidInResponse = apiResponse.users && apiResponse.users.some((user) => user.uuid === targetUuid);
         return isUuidInResponse;
     } catch (error) {
         console.error("Error:", error);
@@ -356,7 +364,7 @@ async function processVLHeader(VLBuffer, userID) {
         default:
             return {
             hasError: true,
-            message: `invild  addressType is ${addressType}`,
+            message: `invalid addressType is ${addressType}`,
             };
     }
     if (!addressValue) {
@@ -389,7 +397,6 @@ async function processVLHeader(VLBuffer, userID) {
 async function VLRemoteSocketToWS(remoteSocket, webSocket, VLResponseHeader, retry, log) {
     // remote--> ws
     let remoteChunkCount = 0;
-    let chunks = [];
     /** @type {ArrayBuffer | null} */
     let VLHeader = VLResponseHeader;
     let hasIncomingData = false; // check if remoteSocket has incoming data
